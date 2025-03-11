@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  smarthousecpsbackend:
+    image: smarthousecpsbackend
+    build:
+      context: .
+      dockerfile: ./Dockerfile

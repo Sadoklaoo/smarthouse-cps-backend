@@ -11,8 +11,8 @@ The **Smart House Backend** is a RESTful API designed to manage smart home devic
 - WebSocket support for real-time event notifications (future enhancement)
 
 ## Tech Stack 🛠️
-- **Backend Framework**: TBD (FastAPI, Flask, or Django)
-- **Database**: TBD (PostgreSQL or MongoDB)
+- **Backend Framework**: FastAPI, SQLAlchemy, Redis, Celery, MQTT
+- **Database**: PostgreSQL
 - **Authentication**: JWT-based authentication
 - **Containerization**: Docker (for easy deployment)
 - **Testing**: Pytest (for unit and integration tests)

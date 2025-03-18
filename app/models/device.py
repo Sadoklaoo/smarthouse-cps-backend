@@ -5,6 +5,8 @@ from app.models.base import Base
 import uuid
 import enum
 
+from app.models.user import User
+
 
 class DeviceType(enum.Enum):
     LIGHT = "light"

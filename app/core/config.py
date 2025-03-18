@@ -18,8 +18,10 @@ class Settings:
     MQTT_PORT: int = int(os.getenv("MQTT_PORT", 1883))
 
     # Redis for Celery
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://:redis:6379")
+    
+    broker_connection_retry_on_startup = True
+    
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your_secret_key")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

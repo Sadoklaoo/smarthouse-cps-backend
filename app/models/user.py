@@ -5,11 +5,13 @@ from app.models.base import Base
 import uuid
 import enum
 
+
 # User Model
 class UserRole(enum.Enum):
     ADMIN = "admin"
     RESIDENT = "resident"
     GUEST = "guest"
+
 
 class User(Base):
     __tablename__ = "users"

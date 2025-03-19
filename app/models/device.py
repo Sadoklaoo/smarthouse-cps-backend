@@ -13,6 +13,7 @@ class DeviceType(enum.Enum):
     THERMOSTAT = "thermostat"
     SENSOR = "sensor"
 
+
 class Device(Base):
     __tablename__ = "devices"
 
@@ -25,4 +26,7 @@ class Device(Base):
 
     user = relationship("User", back_populates="devices")
 
-User.devices = relationship("Device", back_populates="user", cascade="all, delete-orphan")
+
+User.devices = relationship(
+    "Device", back_populates="user", cascade="all, delete-orphan"
+)

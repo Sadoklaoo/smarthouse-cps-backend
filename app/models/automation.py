@@ -1,4 +1,3 @@
-
 from sqlalchemy import Column, String, UUID, TIMESTAMP, ForeignKey, Enum, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -20,4 +19,7 @@ class Automation(Base):
 
     device = relationship("Device", back_populates="automation")
 
-Device.automation = relationship("Automation", back_populates="device", cascade="all, delete-orphan")
+
+Device.automation = relationship(
+    "Automation", back_populates="device", cascade="all, delete-orphan"
+)

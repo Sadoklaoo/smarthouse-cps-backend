@@ -1,5 +1,3 @@
-
-
 from sqlalchemy import Column, String, UUID, TIMESTAMP, ForeignKey, Enum, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -7,6 +5,7 @@ from app.models.base import Base
 import uuid
 
 from app.models.device import Device
+
 
 class Event(Base):
     __tablename__ = "events"
@@ -18,4 +17,7 @@ class Event(Base):
 
     device = relationship("Device", back_populates="events")
 
-Device.events = relationship("Event", back_populates="device", cascade="all, delete-orphan")
+
+Device.events = relationship(
+    "Event", back_populates="device", cascade="all, delete-orphan"
+)

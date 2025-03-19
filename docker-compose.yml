@@ -1,5 +1,11 @@
 version: "3.8"
 
+
+# Define networks
+networks:
+  app_network:
+    driver: bridge
+
 # Define services
 services:
   # PostgreSQL database
@@ -7,12 +13,16 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: always
+    env_file:
+      - .env # Load environment variables from the .env file
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: smart_house_db
     ports:
       - "5432:5432"
+    networks:
+      - app_network
     volumes:
       - pg_data:/var/lib/postgresql/data
 
@@ -20,6 +30,8 @@ services:
   redis:
     image: redis:7
     container_name: redis_broker
+    networks:
+      - app_network
     restart: always
     ports:
       - "6379:6379"
@@ -27,28 +39,45 @@ services:
   # FastAPI backend
   backend:
     build: .
+    image: backend
+    working_dir: /app
     container_name: fastapi_backend
     restart: always
     depends_on:
       - db
       - redis
+    env_file:
+      - .env # Load environment variables from the .env file
     environment:
-      DATABASE_URL: "postgresql://myuser:mypassword@db:5432/smart_house_db"
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      PYTHONPATH: "/app"
     ports:
       - "8000:8000"
+    networks:
+      - app_network
+    volumes:
+      - ./wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
+    command: ["/wait-for-it.sh", "db:5432", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+      
+   
 
   # Celery worker
   worker:
     build: .
     container_name: celery_worker
     restart: always
+    env_file:
+      - .env # Load environment variables from the .env file
     depends_on:
       - backend
       - redis
+    networks:
+      - app_network
     environment:
-      DATABASE_URL: "postgresql://myuser:mypassword@db:5432/smart_house_db"
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
     command: ["celery", "-A", "app.workers.celery_worker", "worker", "--loglevel=info"]
@@ -58,6 +87,8 @@ services:
     image: mher/flower
     container_name: celery_flower
     restart: always
+    env_file:
+      - .env # Load environment variables from the .env file
     depends_on:
       - redis
       - worker
@@ -66,7 +97,14 @@ services:
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
     ports:
       - "5555:5555"
+    networks:
+      - app_network
+
+  # Pytest tests
+
+
 
 # Define volumes
 volumes:
   pg_data:
+  

@@ -3,11 +3,7 @@ from app.core.config import settings
 from celery.schedules import crontab
 
 # Create a Celery instance
-celery = Celery(
-    "smart_house",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL
-)
+celery = Celery("smart_house", broker=settings.REDIS_URL, backend=settings.REDIS_URL)
 
 # Set the Celery configuration
 celery.conf.update(
@@ -25,8 +21,8 @@ celery.conf.beat_schedule = {
     },
 }
 
+
 # This is where you can define periodic tasks if necessary
 @celery.task
 def add(x, y):
     return x + y
-

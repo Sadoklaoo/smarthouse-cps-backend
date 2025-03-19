@@ -29,3 +29,4 @@ celery.conf.beat_schedule = {
 @celery.task
 def add(x, y):
     return x + y
+

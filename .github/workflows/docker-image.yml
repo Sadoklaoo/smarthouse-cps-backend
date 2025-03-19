@@ -25,13 +25,13 @@ jobs:
 
       - name: Build and tag Docker image
         run: |
-          IMAGE_NAME=username/appname
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/backend-smart-home
           BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
           docker build -t $IMAGE_NAME:$BRANCH_NAME .
 
       - name: Push Docker image
         run: |
-          IMAGE_NAME=username/appname
+          IMAGE_NAME=${{ secrets.DOCKER_USERNAME }}/backend-smart-home
           BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/} | tr / -)
           docker push $IMAGE_NAME:$BRANCH_NAME
 

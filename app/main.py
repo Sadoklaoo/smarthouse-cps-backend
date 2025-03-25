@@ -23,6 +23,8 @@ async def lifespan(app: FastAPI):
     """Start the house event monitor when the app starts."""
     monitor_task = asyncio.create_task(MonitorService.monitor_house())
     reactor_task = asyncio.create_task(run_reactor_service())
+    """Database tables creation manager."""
+    await create_tables()
     yield
     monitor_task.cancel()
     reactor_task.cancel()
@@ -47,7 +49,7 @@ def read_root():
 @app.get("/test-db")
 async def test_db_connection():
     try:
-        await create_tables()
+        
         result = await test_database_connection()
         if result == 1:
             return {"message": "Database connection successful!"}

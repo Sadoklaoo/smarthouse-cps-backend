@@ -1,9 +1,12 @@
 version: "3.8"
 
+# --- PROD Environment ---
 
 # Define networks
 networks:
   app_network:
+    driver: bridge
+  test_network:
     driver: bridge
 
 # Define services
@@ -25,6 +28,7 @@ services:
       - app_network
     volumes:
       - pg_data:/var/lib/postgresql/data
+    
 
   # Redis broker
   redis:
@@ -61,8 +65,6 @@ services:
       - ./wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
     command: ["/wait-for-it.sh", "db:5432", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-      
-   
 
   # Celery worker
   worker:
@@ -100,11 +102,65 @@ services:
     networks:
       - app_network
 
+
+
+
+# --- Test Environment ---
+
+
   # Pytest tests
+  test-db:
+    image: postgres:15
+    container_name: test_postgres_db
+    restart: always
+    env_file:
+      - .env # Load environment variables from the .env file
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: test_smart_house_db
+    ports:
+      - "5433:5432"  # Separate port from the main DB
+    networks:
+      - test_network
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    command: ["postgres", "-c", "log_statement=all"]
+
+  test-redis:
+    image: redis:7
+    container_name: test_smart_house_redis
+    restart: always
+    ports:
+      - "6380:6379"  # Separate port from the main Redis
+    networks:
+      - test_network
+
+  test-backend:
+    build: .
+    image: test-backend
+    container_name: test_fastapi_backend
+    env_file:
+      - .env # Load environment variables from the .env file
+    depends_on:
+      - test-db
+      - test-redis
+    
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@test-db:5432/test_smart_house_db"
+      CELERY_BROKER_URL: "redis://test-redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://test-redis:6379/0"
+      MQTT_PORT: "1883"  
+      PYTHONPATH: "/app"
+      
+    networks:
+      - test_network
+    command: ["./wait-for-it.sh", "test-db:5432", "--", "python", "/scripts/initialize_db.py", "&&", "pytest"]
+    volumes:
+      - ./scripts:/scripts
 
 
-
-# Define volumes
+  # Define volumes
 volumes:
-  pg_data:
-  
+    pg_data:
+    test_db_data:

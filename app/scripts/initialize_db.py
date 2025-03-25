@@ -1,12 +1,15 @@
-from app.models import Base, engine 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from app.core.database import Base
+
+DATABASE_URL = "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
 
 
-def initialize_database():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-    print("Database initialized successfully!")
+def initialize_db():
+    engine = create_engine(DATABASE_URL)
+    Base.metadata.drop_all(bind=engine)  # Drop all existing tables
+    Base.metadata.create_all(bind=engine)  # Recreate tables
+
 
 if __name__ == "__main__":
-    initialize_database()
+    initialize_db()
+    print("Database initialized successfully.")

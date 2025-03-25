@@ -4,9 +4,6 @@ from app.core.database import async_session
 from app.models.user import User, UserRole
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_create_user():
     async with async_session() as session:

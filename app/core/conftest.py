@@ -9,7 +9,10 @@ TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
 
 # Create async database engine
 engine = create_async_engine(TEST_DATABASE_URL, future=True, echo=True)
-TestingSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+TestingSessionLocal = sessionmaker(
+    bind=engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 # Initialize the database before running tests
 @pytest.fixture(scope="session")
@@ -19,6 +22,7 @@ def event_loop():
     yield loop
     loop.close()
 
+
 @pytest.fixture(scope="session", autouse=True)
 async def setup_database():
     """Create and drop tables for testing."""
@@ -27,6 +31,7 @@ async def setup_database():
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
 
 @pytest.fixture(scope="function")
 async def test_db():

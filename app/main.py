@@ -4,7 +4,7 @@ import os
 from databases import Database
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy import text
-from app.core.database import create_tables, get_db, test_database_connection
+from app.core.database import create_tables
 from app.services import reactor_service
 from app.workers.celery_worker import add
 from app.services.monitor_service import MonitorService
@@ -23,8 +23,7 @@ async def lifespan(app: FastAPI):
     """Start the house event monitor when the app starts."""
     monitor_task = asyncio.create_task(MonitorService.monitor_house())
     reactor_task = asyncio.create_task(run_reactor_service())
-    """Database tables creation manager."""
-    await create_tables()
+
     yield
     monitor_task.cancel()
     reactor_task.cancel()
@@ -37,31 +36,13 @@ app.lifespan = lifespan
 async def run_reactor_service():
     """Continuously check the EventPool and process events."""
     while True:
-        reactor_service.process_event()
+        # Check if any events exist in the event pool (this can be adjusted depending on your event handling design)
+        events_to_process = reactor_service.event_pool.get_events()
+        for event in events_to_process:
+            reactor_service.process_event(event)
         await asyncio.sleep(3)  # Adjust processing interval
 
 
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
-
-
-@app.get("/test-db")
-async def test_db_connection():
-    try:
-        
-        result = await test_database_connection()
-        if result == 1:
-            return {"message": "Database connection successful!"}
-        else:
-            raise HTTPException(status_code=500, detail="Unexpected result from DB")
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Database connection failed: {str(e)}"
-        )
-
-
-@app.post("/trigger_add/")
-async def trigger_add(x: int, y: int):
-    task = add.delay(x, y)
-    return {"task_id": task.id}

@@ -13,7 +13,6 @@ engine = create_async_engine(settings.DATABASE_URL, future=True, echo=True)
 async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
 
-
 # Dependency for database session
 async def get_db():
     async with async_session() as session:
@@ -31,5 +30,9 @@ async def test_database_connection():
 # Create all tables in the database
 async def create_tables():
     async with engine.begin() as conn:
-        # Create all tables based on Base
-        await conn.run_sync(Base.metadata.create_all)
+        try:
+            # Create all tables based on Base
+            await conn.run_sync(Base.metadata.create_all)
+            print("Tables created successfully.")
+        except Exception as e:
+            print(f"Error creating tables: {e}")

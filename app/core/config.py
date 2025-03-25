@@ -10,7 +10,6 @@ class Settings:
 
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL")
-    TEST_DATABASE_URL: str = os.getenv("TEST_DATABASE_URL")
 
     # MQTT Configuration
     MQTT_BROKER: str = os.getenv("MQTT_BROKER")

@@ -3,7 +3,10 @@ from app.models.event import Event
 from sqlalchemy.future import select
 import asyncio
 from app.services.event_pool import event_pool
-from app.services.reactor_service import reactor_service  # Assuming this is your ReactorService
+from app.services.reactor_service import (
+    reactor_service,
+)  # Lazy import to avoid circular imports
+
 
 class MonitorService:
     @staticmethod
@@ -28,7 +31,7 @@ class MonitorService:
                     # Store event in EventPool
                     MonitorService.store_event_in_pool(event)
                     # Trigger the ReactorService to process the event
-                    reactor_service.process_events()  # Assuming process_events handles the reactor logic
+                    reactor_service.handle_event()
             await asyncio.sleep(5)  # Adjust interval as needed
 
     @staticmethod

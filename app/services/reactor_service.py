@@ -1,28 +1,33 @@
-from app.services.event_pool import event_pool
-from app.services.consequence_pool import consequence_pool
+from asyncio import Event
+import datetime
+from app.services import consequence_pool
 
 
 class ReactorService:
-    """Listens for events and triggers actions based on predefined rules."""
-
-    def process_event(self):
-        """Check EventPool and trigger appropriate actions."""
-        events = event_pool.get_all_events()
-        for event in events:
-            action = self.get_action_for_event(event["event_type"])
-            if action:
-                consequence_pool.add_consequence({"event": event, "action": action})
-                print(f"Action triggered: {action} for event {event['event_type']}")
-
-    def get_action_for_event(self, event_type: str):
-        """Define rules for triggering actions based on event type."""
-        rules = {
-            "motion_detected": "turn_on_light",
-            "temp_high": "turn_on_air_conditioning",
-            "door_opened": "send_alert",
+    def __init__(self):
+        # Event to action mapping
+        self.event_actions = {
+            "motion_detected": ("turn_on_lights", "lights_on"),
+            "temperature_high": ("turn_on_ac", "ac_on"),
+            "door_opened": ("send_alert", "alert_sent"),
         }
-        return rules.get(event_type)
 
+    def process_event(self, event: Event):
+        """Process the event and trigger the corresponding action."""
+        action, result = self.react_to_event(event)
+        # Log the action to the consequence pool
+        consequence_pool.add_consequence(action, result)
+        # Print the action and result
+        print(f"Action triggered: {action} | Result: {result}")
 
-# Global instance
-reactor_service = ReactorService()
+    def react_to_event(self, event: Event):
+        """React to the event by triggering an action."""
+        action, result = self.event_actions.get(
+            event.event_type, ("no_action", "no_action")
+        )
+        return action, result
+
+    def handle_event(self, event: Event):
+        """Handle event processing."""
+        print(f"Handling event: {event.event_type} from Device {event.device_id}")
+        self.process_event(event)

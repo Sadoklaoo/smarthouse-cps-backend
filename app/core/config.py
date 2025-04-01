@@ -11,6 +11,9 @@ class Settings:
     # Database Configuration
     DATABASE_URL: str = os.getenv("DATABASE_URL")
 
+    # Test Database Configuration (Fallback to production DB if not set)
+    TEST_DATABASE_URL: str = os.getenv("TEST_DATABASE_URL")
+
     # MQTT Configuration
     MQTT_BROKER: str = os.getenv("MQTT_BROKER")
     MQTT_PORT: int = int(os.getenv("MQTT_PORT"))
@@ -23,6 +26,9 @@ class Settings:
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Environment
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT")
 
 
 settings = Settings()

@@ -13,7 +13,16 @@ class EventPool:
 
     def add_event(self, event: Dict):
         """Add a new event to the pool."""
+
+        if any(
+            existing_event["id"] == event["id"] and existing_event["timestamp"] == event["timestamp"]
+            for existing_event in self.pool
+        ):
+            return  # Don't add duplicate events
+
+        # Add the event to the pool if it is not a duplicate
         self.pool.append(event)
+
 
     def get_all_events(self) -> List[Dict]:
         """Retrieve all stored events."""

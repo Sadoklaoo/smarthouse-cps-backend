@@ -1,5 +1,6 @@
 version: "3.8"
 
+# --- PROD Environment ---
 
 # Define networks
 networks:
@@ -20,12 +21,13 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: smart_house_db
     ports:
-      - "5432:5432"
+      - "5432:5432"  # Standard PostgreSQL port
     networks:
       - app_network
     volumes:
       - pg_data:/var/lib/postgresql/data
-
+      - ./scripts/init_db.sh/init_test_db.sql:/docker-entrypoint-initdb.d/init_test_db.sh  # Optional: Initialization script
+    # ADD Script to initialize the DB schema and tables
   # Redis broker
   redis:
     image: redis:7
@@ -49,7 +51,7 @@ services:
     env_file:
       - .env # Load environment variables from the .env file
     environment:
-      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Same DB URL for prod and test
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
       PYTHONPATH: "/app"
@@ -58,11 +60,9 @@ services:
     networks:
       - app_network
     volumes:
-      - ./wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
-    command: ["/wait-for-it.sh", "db:5432", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-      
-   
+      - ./scripts/wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
+      - ./scripts/entrypoint.sh:/entrypoint.sh    
+    command: ["./scripts/entrypoint.sh"]
 
   # Celery worker
   worker:
@@ -100,11 +100,43 @@ services:
     networks:
       - app_network
 
-  # Pytest tests
+  alembic:
+    build: .
+    container_name: alembic_runner
+    restart: "no"
+    depends_on:
+      - db
+    env_file:
+      - .env  # Loads environment variables here too
+    command: ["alembic", "upgrade", "head"]
+    networks:
+      - app_network
 
 
+# --- TEST Environment ---
+
+  # Optional: You can add a script to initialize the DB before running tests
+  test-backend:
+    build: .
+    container_name: test_fastapi_backend
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Use the same DB URL
+      CELERY_BROKER_URL: "redis://redis:6379/0"
+      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+      MQTT_PORT: "1883"
+      PYTHONPATH: "/app"
+    networks:
+      - app_network
+    volumes:
+      - ./scripts:/scripts  # Mount the scripts for testing, if needed
+      - ./scripts/wait-for-it.sh:/wait-for-it.sh # Mount the wait-for-it.sh script
+    command: ["./scripts/wait-for-it.sh", "db:5432","--timeout=30", "--strict", "--", "pytest"]  # Run pytest or initialize DB logic here
 
 # Define volumes
 volumes:
   pg_data:
-  

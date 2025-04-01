@@ -19,14 +19,15 @@ services:
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: smart_house_db # Use the same database for testing and production
+      POSTGRES_DB: smart_house_db
     ports:
       - "5432:5432"  # Standard PostgreSQL port
     networks:
       - app_network
     volumes:
       - pg_data:/var/lib/postgresql/data
-
+      - ./scripts/init_db.sh/init_test_db.sql:/docker-entrypoint-initdb.d/init_test_db.sh  # Optional: Initialization script
+    # ADD Script to initialize the DB schema and tables
   # Redis broker
   redis:
     image: redis:7
@@ -59,9 +60,9 @@ services:
     networks:
       - app_network
     volumes:
-      - ./wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
-      - ./entrypoint.sh:/entrypoint.sh    
-    command: ["/entrypoint.sh"]
+      - ./scripts/wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
+      - ./scripts/entrypoint.sh:/entrypoint.sh    
+    command: ["./scripts/entrypoint.sh"]
 
   # Celery worker
   worker:
@@ -133,7 +134,8 @@ services:
       - app_network
     volumes:
       - ./scripts:/scripts  # Mount the scripts for testing, if needed
-    command: ["./wait-for-it.sh", "db:5432", "--", "pytest"]  # Run pytest or initialize DB logic here
+      - ./scripts/wait-for-it.sh:/wait-for-it.sh # Mount the wait-for-it.sh script
+    command: ["./scripts/wait-for-it.sh", "db:5432","--timeout=30", "--strict", "--", "pytest"]  # Run pytest or initialize DB logic here
 
 # Define volumes
 volumes:

@@ -9,6 +9,7 @@ from app.services import reactor_service
 from app.workers.celery_worker import add
 from app.services.monitor_service import MonitorService
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.routes.users import router as users_router  # Import the users router
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -63,3 +64,7 @@ async def test_db_connection():
 async def trigger_add(x: int, y: int):
     task = add.delay(x, y)
     return {"task_id": task.id}
+
+
+# Include the users router
+app.include_router(users_router, prefix="/api/users", tags=["users"])

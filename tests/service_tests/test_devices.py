@@ -1,88 +1,192 @@
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.models.base import Base
-from app.models.device import Device
-from app.models.user import User
+from unittest.mock import MagicMock
 from app.services.device_service import (
     create_device_service,
     get_devices_service,
     get_device_service,
     update_device_status_service,
-    delete_device_service,
+    delete_device_service
 )
-from app.schemas.device import DeviceCreate, DeviceUpdate
+from app.models.device import Device
+from app.schemas.device import DeviceCreate, DeviceUpdate, DeviceTypeEnum
+from fastapi import HTTPException
 import uuid
 
-# Create an in-memory SQLite database for testing
-test_engine = create_engine("sqlite:///:memory:")
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
-@pytest.fixture(scope="function")
-def db_session():
-    """Creates a new database session for each test."""
-    Base.metadata.create_all(bind=test_engine)
-    session = TestingSessionLocal()
-    yield session
-    session.close()
-    Base.metadata.drop_all(bind=test_engine)
+@pytest.fixture
+def mock_db():
+    """Fixture to mock the database session."""
+    return MagicMock()
 
-@pytest.fixture(scope="function")
-def test_user(db_session):
-    """Creates a test user."""
-    user = User(id=uuid.uuid4(), username="testuser", email="test@example.com")
-    db_session.add(user)
-    db_session.commit()
-    return user
 
-@pytest.fixture(scope="function")
-def test_device(test_user, db_session):
-    """Creates a test device."""
-    device_data = DeviceCreate(device_name="Test Device", device_type="light", status=True)
-    return create_device_service(device_data, db_session, test_user)
+@pytest.fixture
+def device_create_data():
+    """Fixture to provide device creation data."""
+    return DeviceCreate(
+        device_name="Smart Light", 
+        device_type=DeviceTypeEnum.LIGHT, 
+        status=True
+    )
 
-def test_create_device(db_session, test_user):
-    """Test creating a new device."""
-    device_data = DeviceCreate(device_name="New Device", device_type="thermostat", status=False)
-    device = create_device_service(device_data, db_session, test_user)
-    assert device.device_name == "New Device"
-    assert device.device_type.value == "thermostat"
-    assert device.status is False
 
-def test_get_devices(db_session, test_user, test_device):
-    """Test retrieving all devices for a user."""
-    devices = get_devices_service(db_session, test_user)
-    assert len(devices) == 1
-    assert devices[0].device_name == "Test Device"
+@pytest.fixture
+def device_update_data():
+    """Fixture to provide device update data."""
+    return DeviceUpdate(status=False)
 
-def test_get_device(db_session, test_user, test_device):
-    """Test retrieving a specific device."""
-    device = get_device_service(test_device.id, db_session, test_user)
-    assert device.id == test_device.id
 
-def test_update_device_status(db_session, test_user, test_device):
+# Test Create Device Service
+def test_create_device_service(mock_db, device_create_data, caplog):
+    """Test the creation of a device."""
+
+    # Mock the behavior of the database session
+    mock_device = MagicMock(spec=Device)
+    mock_db.add = MagicMock()
+    mock_db.commit = MagicMock()
+    mock_db.refresh = MagicMock(return_value=mock_device)
+
+    # Run the service method
+    with caplog.at_level('INFO'):
+        new_device = create_device_service(device_create_data, mock_db)
+
+    # Assert the expected results
+    assert new_device.device_name == "Smart Light"
+    assert new_device.device_type == DeviceTypeEnum.LIGHT
+    assert new_device.status is True
+    mock_db.add.assert_called_once_with(new_device)
+    mock_db.commit.assert_called_once()
+
+    # Check the logs
+    assert "Creating new device: Smart Light" in caplog.text
+    assert "Device created successfully with ID:" in caplog.text
+
+
+# Test Get Devices Service
+def test_get_devices_service(mock_db, caplog):
+    """Test retrieving all devices."""
+
+    # Mock the behavior of the database session
+    mock_devices = [MagicMock(spec=Device), MagicMock(spec=Device)]
+    mock_db.query().all.return_value = mock_devices
+
+    # Run the service method
+    with caplog.at_level('INFO'):
+        devices = get_devices_service(mock_db)
+
+    # Assert the expected results
+    assert len(devices) == 2
+    mock_db.query().all.assert_called_once()
+
+    # Check the logs
+    assert "Fetching all devices" in caplog.text
+
+
+# Test Get Device Service
+def test_get_device_service(mock_db, caplog):
+    """Test retrieving a single device by ID."""
+
+    device_id = uuid.uuid4()
+    mock_device = MagicMock(spec=Device)
+    mock_db.query().filter().first.return_value = mock_device
+
+    # Run the service method
+    with caplog.at_level('INFO'):
+        device = get_device_service(device_id, mock_db)
+
+    # Assert the expected results
+    assert device == mock_device
+    mock_db.query().filter().first.assert_called_once()
+
+    # Check the logs
+    assert f"Fetching device with ID: {device_id}" in caplog.text
+
+
+# Test Get Device Service (Device Not Found)
+def test_get_device_service_not_found(mock_db, caplog):
+    """Test retrieving a non-existing device by ID."""
+
+    device_id = uuid.uuid4()
+    mock_db.query().filter().first.return_value = None
+
+    # Run the service method and expect an exception
+    with caplog.at_level('WARNING'):
+        with pytest.raises(HTTPException):
+            get_device_service(device_id, mock_db)
+
+    # Check the logs
+    assert f"Device not found: {device_id}" in caplog.text
+
+
+# Test Update Device Status Service
+def test_update_device_status_service(mock_db, device_update_data, caplog):
     """Test updating a device's status."""
-    update_data = DeviceUpdate(status=False)
-    updated_device = update_device_status_service(test_device.id, update_data, db_session, test_user)
+
+    device_id = uuid.uuid4()
+    mock_device = MagicMock(spec=Device)
+    mock_db.query().filter().first.return_value = mock_device
+
+    # Run the service method
+    with caplog.at_level('INFO'):
+        updated_device = update_device_status_service(device_id, device_update_data, mock_db)
+
+    # Assert the expected results
     assert updated_device.status is False
+    mock_db.commit.assert_called_once()
+    mock_db.refresh.assert_called_once()
 
-def test_delete_device(db_session, test_user, test_device):
-    """Test deleting a device."""
-    delete_device_service(test_device.id, db_session, test_user)
-    devices = get_devices_service(db_session, test_user)
-    assert len(devices) == 0
+    # Check the logs
+    assert f"Updating device status for ID: {device_id}" in caplog.text
+    assert f"Device updated successfully: {device_id}" in caplog.text
 
-def test_get_nonexistent_device(db_session, test_user):
-    """Test retrieving a device that does not exist."""
-    with pytest.raises(Exception):
-        get_device_service(uuid.uuid4(), db_session, test_user)
 
-def test_update_nonexistent_device(db_session, test_user):
+# Test Update Device Status Service (Device Not Found)
+def test_update_device_status_service_not_found(mock_db, device_update_data, caplog):
     """Test updating a device that does not exist."""
-    with pytest.raises(Exception):
-        update_device_status_service(uuid.uuid4(), DeviceUpdate(status=True), db_session, test_user)
 
-def test_delete_nonexistent_device(db_session, test_user):
+    device_id = uuid.uuid4()
+    mock_db.query().filter().first.return_value = None
+
+    # Run the service method and expect an exception
+    with caplog.at_level('WARNING'):
+        with pytest.raises(HTTPException):
+            update_device_status_service(device_id, device_update_data, mock_db)
+
+    # Check the logs
+    assert f"Device not found for update: {device_id}" in caplog.text
+
+
+# Test Delete Device Service
+def test_delete_device_service(mock_db, caplog):
+    """Test deleting a device by ID."""
+
+    device_id = uuid.uuid4()
+    mock_device = MagicMock(spec=Device)
+    mock_db.query().filter().first.return_value = mock_device
+
+    # Run the service method
+    with caplog.at_level('INFO'):
+        delete_device_service(device_id, mock_db)
+
+    # Assert the expected results
+    mock_db.delete.assert_called_once_with(mock_device)
+    mock_db.commit.assert_called_once()
+
+    # Check the logs
+    assert f"Deleting device with ID: {device_id}" in caplog.text
+    assert f"Device deleted successfully: {device_id}" in caplog.text
+
+
+# Test Delete Device Service (Device Not Found)
+def test_delete_device_service_not_found(mock_db, caplog):
     """Test deleting a device that does not exist."""
-    with pytest.raises(Exception):
-        delete_device_service(uuid.uuid4(), db_session, test_user)
+
+    device_id = uuid.uuid4()
+    mock_db.query().filter().first.return_value = None
+
+    # Run the service method and expect an exception
+    with caplog.at_level('WARNING'):
+        with pytest.raises(HTTPException):
+            delete_device_service(device_id, mock_db)
+
+    # Check the logs
+    assert f"Device not found for deletion: {device_id}" in caplog.text

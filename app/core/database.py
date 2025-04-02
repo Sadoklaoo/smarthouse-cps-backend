@@ -14,30 +14,30 @@ DATABASE_URL = (
     else settings.DATABASE_URL
 )
 
-
 # Create async engine
 engine = create_async_engine(DATABASE_URL, future=True, echo=True)
 
 # Create session factory
 async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
 
-
 # Dependency for database session
 async def get_db():
     async with async_session() as session:
         yield session
 
-
 # Test function to check database connection
 async def test_database_connection():
+    # Delay model imports to avoid circular dependency
+    from app.models.device import Device  # Import models inside function
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(1))
             return result.scalar()  # This should return 1 if the query is successful
 
-
 # Create all tables in the database
 async def create_tables():
+    # Delay model imports to avoid circular dependency
+    from app.models.device import Device  # Import models inside function
     async with engine.begin() as conn:
         try:
             # Create all tables based on Base

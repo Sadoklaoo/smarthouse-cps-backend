@@ -26,9 +26,26 @@ services:
       - app_network
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./scripts/init_db.sh/init_test_db.sql:/docker-entrypoint-initdb.d/init_test_db.sh  # Optional: Initialization script
-    # ADD Script to initialize the DB schema and tables
+   
   # Redis broker
+  
+  test_db:
+    image: postgres:15
+    container_name: test_postgres_db
+    restart: always
+    env_file:
+      - .env # Load environment variables from the .env file
+    environment:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpassword
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"  # Standard PostgreSQL port
+    networks:
+      - app_network
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+ 
   redis:
     image: redis:7
     container_name: redis_broker
@@ -100,20 +117,32 @@ services:
     networks:
       - app_network
 
-  alembic:
+  alembic_prod:
     build: .
-    container_name: alembic_runner
+    container_name: alembic_runner_prod
     restart: "no"
     depends_on:
       - db
     env_file:
       - .env  # Loads environment variables here too
-    command: ["alembic", "upgrade", "head"]
+    command: ["alembic","-c","alembic_prod.ini", "upgrade", "head"]
     networks:
       - app_network
 
 
 # --- TEST Environment ---
+
+  alembic_test:
+    build: .
+    container_name: alembic_runner_test
+    restart: "no"
+    depends_on:
+      - test_db
+    env_file:
+      - .env  # Loads environment variables here too
+    command: ["alembic","-c","alembic_test.ini", "upgrade", "head"]
+    networks:
+      - app_network
 
   # Optional: You can add a script to initialize the DB before running tests
   test-backend:
@@ -122,10 +151,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - db
+      - test_db
       - redis
     environment:
-      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Use the same DB URL
+      DATABASE_URL: "postgresql+asyncpg://testuser:testpassword@test_db:5433/test_db"  # Use the same DB URL
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
       MQTT_PORT: "1883"

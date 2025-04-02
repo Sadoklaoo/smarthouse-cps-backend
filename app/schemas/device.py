@@ -12,6 +12,9 @@ class DeviceCreate(BaseModel):
     device_name: str
     device_type: DeviceTypeEnum
     status: bool = False
+    
+    class Config:
+        arbitrary_types_allowed = True
 
 class DeviceResponse(BaseModel):
     id: uuid.UUID
@@ -21,7 +24,8 @@ class DeviceResponse(BaseModel):
     user_id: uuid.UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+        arbitrary_types_allowed = True
 
 class DeviceUpdate(BaseModel):
     status: bool | None = None

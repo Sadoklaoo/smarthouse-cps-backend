@@ -30,6 +30,12 @@ app = FastAPI(title="Smart House API", version="1.0")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start the house event monitor when the app starts."""
+    # Initialize the database and create tables
+    async with engine.begin() as conn:
+        # Create all tables in the database if they don't exist
+        await conn.run_sync(Base.metadata.create_all)
+    print("Tables created successfully.")
+
     # Start the monitor service in the background
     monitor_task = asyncio.create_task(monitor_service.monitor_house())
     reactor_task = asyncio.create_task(run_reactor_service())
@@ -66,20 +72,3 @@ async def run_reactor_service():
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
-
-
-# Initialize and create tables when the app starts
-@asynccontextmanager
-async def startup_database():
-    """Create the tables when the app starts."""
-    async with engine.begin() as conn:
-        # Create all tables in the database if they don't exist
-        await conn.run_sync(Base.metadata.create_all)
-    print("Tables created successfully.")
-    yield
-    # The shutdown process is handled in the `lifespan` context manager.
-    # You can add more cleanup code here if needed.
-
-
-# Add the startup and shutdown functionality to the lifespan handler
-app.lifespan = lifespan

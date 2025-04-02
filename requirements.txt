@@ -12,7 +12,7 @@ asyncpg==0.29.0
 psycopg2-binary==2.9.10
 databases==0.8.0
 alembic==1.15.1
-
+aiosqlite==0.21.0
 
 # Redis & Celery (Task Queue)
 redis==5.0.1

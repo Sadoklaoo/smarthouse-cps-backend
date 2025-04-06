@@ -12,7 +12,7 @@ class Automation(Base):
     __tablename__ = "automations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4) 
-    device_id = Column(UUID(as_uuid=True), ForeignKey('device.id')) 
+    device_id = Column(UUID(as_uuid=True), ForeignKey('devices.id')) 
 
     name = Column(String(255), nullable=False)
     condition = Column(String(255), nullable=False)  # Define the condition for automation

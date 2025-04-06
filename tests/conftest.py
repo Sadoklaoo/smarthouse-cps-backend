@@ -6,7 +6,7 @@ from app.core.database import Base
 @pytest.fixture(scope="session")
 async def test_db():
     # Test database URL pointing to the test container
-    DATABASE_URL = "postgresql+asyncpg://testuser:testpassword@test_db:5433/test_db"
+    DATABASE_URL = "postgresql+asyncpg://testuser:testpassword@test_db:5432/test_db"
     engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 
     # Create all tables in the test database

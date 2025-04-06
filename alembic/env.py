@@ -9,9 +9,9 @@ from alembic import context
 from app.models.base import Base  # Ensure your models are correctly imported
 
 # Load environment variables
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 # Alembic Config object
 config = context.config
@@ -23,7 +23,6 @@ if config.config_file_name is not None:
 
 # Set metadata for autogeneration
 target_metadata = Base.metadata
-
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -37,7 +36,6 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
-
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode with async support."""
     connectable = create_async_engine(DATABASE_URL, poolclass=pool.NullPool)
@@ -45,12 +43,10 @@ async def run_migrations_online() -> None:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
 
-
 def do_run_migrations(connection):
     context.configure(connection=connection, target_metadata=target_metadata)
     with context.begin_transaction():
         context.run_migrations()
-
 
 if context.is_offline_mode():
     run_migrations_offline()

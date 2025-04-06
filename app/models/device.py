@@ -18,7 +18,7 @@ class Device(Base):
     __tablename__ = "devices"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4) 
-    device_id = Column(UUID(as_uuid=True), ForeignKey('users.id')) 
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id')) 
 
     device_name = Column(String(255), nullable=False)
     device_type = Column(Enum(DeviceType), nullable=False)
@@ -27,6 +27,4 @@ class Device(Base):
 
     user = relationship("User", back_populates="devices")
 
-User.devices = relationship(
-    "Device", back_populates="user", cascade="all, delete-orphan"
-)
+

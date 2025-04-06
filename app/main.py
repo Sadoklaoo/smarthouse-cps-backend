@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from app.services.monitor_service import MonitorService
 from app.services.reactor_service import ReactorService
 from app.services.event_pool import EventPool
+from app.api.routes import router as api_router
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -25,7 +26,7 @@ reactor_service = ReactorService(event_pool)
 monitor_service = MonitorService(reactor_service)
 
 app = FastAPI(title="Smart House API", version="1.0")
-
+app.include_router(api_router, prefix="/api", tags=["api"])
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +56,7 @@ async def lifespan(app: FastAPI):
 
 
 # Use the lifespan context manager for handling events
-app.lifespan = lifespan
+#app.lifespan = lifespan
 
 
 async def run_reactor_service():

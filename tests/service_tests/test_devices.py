@@ -24,7 +24,7 @@ def device_create_data():
     """Fixture to provide device creation data."""
     return DeviceCreate(
         device_name="Smart Light", 
-        device_type=DeviceTypeEnum.LIGHT, 
+        device_type=DeviceTypeEnum("light"),
         status=True
     )
 
@@ -51,7 +51,7 @@ def test_create_device_service(mock_db, device_create_data, caplog):
 
     # Assert the expected results
     assert new_device.device_name == "Smart Light"
-    assert new_device.device_type == DeviceTypeEnum.LIGHT
+    assert new_device.device_type == DeviceTypeEnum("light")
     assert new_device.status is True
     mock_db.add.assert_called_once_with(new_device)
     mock_db.commit.assert_called_once()

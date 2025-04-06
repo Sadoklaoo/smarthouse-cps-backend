@@ -7,12 +7,8 @@ from app.models.base import Base
 
 Base = declarative_base()
 
-# Determine which DATABASE_URL to use based on the environment
-DATABASE_URL = (
-    settings.TEST_DATABASE_URL
-    if os.getenv("ENVIRONMENT") == "testing"
-    else settings.DATABASE_URL
-)
+
+DATABASE_URL = settings.DATABASE_URL
 
 # Create async engine
 engine = create_async_engine(DATABASE_URL, future=True, echo=True)
@@ -27,8 +23,6 @@ async def get_db():
 
 # Test function to check database connection
 async def test_database_connection():
-    # Delay model imports to avoid circular dependency
-    from app.models.device import Device  # Import models inside function
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(1))
@@ -36,8 +30,6 @@ async def test_database_connection():
 
 # Create all tables in the database
 async def create_tables():
-    # Delay model imports to avoid circular dependency
-    from app.models.device import Device  # Import models inside function
     async with engine.begin() as conn:
         try:
             # Create all tables based on Base

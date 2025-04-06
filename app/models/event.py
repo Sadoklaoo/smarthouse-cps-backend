@@ -12,7 +12,7 @@ class Event(Base):
     __tablename__ = "events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4) 
-    device_id = Column(UUID(as_uuid=True), ForeignKey('device.id')) 
+    device_id = Column(UUID(as_uuid=True), ForeignKey('devices.id')) 
 
     event_type = Column(String(255), nullable=False)
     timestamp = Column(TIMESTAMP, server_default=func.now())

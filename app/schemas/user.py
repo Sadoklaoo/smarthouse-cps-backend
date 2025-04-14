@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from uuid import UUID
 from enum import Enum
 
@@ -10,13 +10,11 @@ class UserRole(str, Enum):
 
 
 class UserResponse(BaseModel):
-    id: UUID
     username: str
-    email: EmailStr
-    role: UserRole
+    email: str
+    role: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)  # Use ConfigDict instead of class-based Config
 
 
 class UserCreate(BaseModel):

@@ -4,7 +4,7 @@ from app.schemas.user import UserCreate, UserRead,UserUpdate
 from app.services.user_service import create_user, get_user_by_email, get_user_by_id,update_user,delete_user
 from app.core.logging_config import logger  # Import the logger
 
-router = APIRouter( tags=["Users"])
+router = APIRouter()
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def register_user(user_in: UserCreate):

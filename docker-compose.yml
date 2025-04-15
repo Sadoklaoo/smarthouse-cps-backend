@@ -53,6 +53,8 @@ services:
     environment:
       DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Same DB URL for prod and test
       CELERY_BROKER_URL: "redis://redis:6379/0"
+      MQTT_BROKER: mqtt
+      MQTT_PORT: 1883
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
       PYTHONPATH: "/app"
     ports:
@@ -60,9 +62,10 @@ services:
     networks:
       - app_network
     volumes:
+      - ./scripts:/app/scripts  # ✅ MOUNT THE WHOLE SCRIPTS DIR
       - ./scripts/wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
-      - ./scripts/entrypoint.sh:/entrypoint.sh    
-    command: ["./scripts/entrypoint.sh"]
+      - ./scripts/entrypoint.sh:/entrypoint.sh
+    command: [ "./scripts/entrypoint.sh" ]
 
   # Celery worker
   worker:
@@ -80,7 +83,7 @@ services:
       DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-    command: ["celery", "-A", "app.workers.celery_worker", "worker", "--loglevel=info"]
+    command: [ "celery", "-A", "app.workers.celery_worker", "worker", "--loglevel=info" ]
 
   # Celery Flower monitoring tool
   flower:
@@ -108,12 +111,12 @@ services:
       - db
     env_file:
       - .env  # Loads environment variables here too
-    command: ["alembic", "upgrade", "head"]
+    command: [ "alembic", "upgrade", "head" ]
     networks:
       - app_network
 
 
-# --- TEST Environment ---
+  # --- TEST Environment ---
 
   # Optional: You can add a script to initialize the DB before running tests
   test-backend:
@@ -128,14 +131,26 @@ services:
       DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Use the same DB URL
       CELERY_BROKER_URL: "redis://redis:6379/0"
       CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      MQTT_PORT: "1883"
+      MQTT_BROKER: mqtt
+      MQTT_PORT: 1883
       PYTHONPATH: "/app"
     networks:
       - app_network
     volumes:
       - ./scripts:/scripts  # Mount the scripts for testing, if needed
       - ./scripts/wait-for-it.sh:/wait-for-it.sh # Mount the wait-for-it.sh script
-    command: ["./scripts/wait-for-it.sh", "db:5432","--timeout=30", "--strict", "--", "pytest"]  # Run pytest or initialize DB logic here
+    command: [ "./scripts/wait-for-it.sh", "db:5432","--timeout=30", "--strict", "--", "pytest" ]  # Run pytest or initialize DB logic here
+
+  mqtt:
+    image: eclipse-mosquitto
+    restart: always
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - app_network
 
 # Define volumes
 volumes:

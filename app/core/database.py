@@ -1,39 +1,40 @@
+# db.py (Initialization for database)
+
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from app.models.user import User
+from app.models.device import Device
+from app.models.sensor import Sensor
+from app.models.event import Event
+from app.models.automation import Automation
+from app.models.action import Action
 import os
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from app.core.config import settings
-from app.models.base import Base
+from dotenv import load_dotenv
+from typing import Optional
 
-Base = declarative_base()
+load_dotenv()
 
+# Get MongoDB credentials from environment variables
+MONGO_USERNAME = os.getenv("MONGO_USERNAME", "admin")
+MONGO_PASSWORD = os.getenv("MONGO_PASSWORD", "admin")
+MONGO_HOST = os.getenv("MONGO_HOST", "mongo")
+MONGO_PORT = os.getenv("MONGO_PORT", "27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "smart_house_db")
 
-DATABASE_URL = settings.DATABASE_URL
+# Construct MongoDB URI with authentication
+MONGODB_URI = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{DATABASE_NAME}?authSource=admin"
 
-# Create async engine
-engine = create_async_engine(DATABASE_URL, future=True, echo=True)
+client: Optional[AsyncIOMotorClient] = None  # type: ignore
 
-# Create session factory
-async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+async def init_db():
+    global client
+    client = AsyncIOMotorClient(MONGODB_URI)  # MongoDB client initialization
+    db = client[DATABASE_NAME]
 
-# Dependency for database session
-async def get_db():
-    async with async_session() as session:
-        yield session
+    # Initialize Beanie models
+    await init_beanie(
+        database=db,
+        document_models=[User, Device, Sensor, Event, Automation, Action]
+    )
 
-# Test function to check database connection
-async def test_database_connection():
-    async with async_session() as session:
-        async with session.begin():
-            result = await session.execute(select(1))
-            return result.scalar()  # This should return 1 if the query is successful
-
-# Create all tables in the database
-async def create_tables():
-    async with engine.begin() as conn:
-        try:
-            # Create all tables based on Base
-            await conn.run_sync(Base.metadata.create_all)
-            print("Tables created successfully.")
-        except Exception as e:
-            print(f"Error creating tables: {e}")
+    print("✅ Connected to MongoDB!")

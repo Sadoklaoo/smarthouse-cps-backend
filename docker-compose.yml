@@ -1,149 +1,40 @@
+version: '3.9'
 
-# --- PROD Environment ---
-
-# Define networks
-networks:
-  app_network:
-    driver: bridge
-
-# Define services
 services:
-  # PostgreSQL database
-  db:
-    image: postgres:15
-    container_name: postgres_db
-    restart: always
-    env_file:
-      - .env # Load environment variables from the .env file
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mypassword
-      POSTGRES_DB: smart_house_db
-    ports:
-      - "5432:5432"  # Standard PostgreSQL port
-    networks:
-      - app_network
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-  # Redis broker
-  
-  test_db:
-    image: postgres:15
-    container_name: test_postgres_db
-    restart: always
-    env_file:
-      - .env # Load environment variables from the .env file
-    environment:
-      POSTGRES_USER: testuser
-      POSTGRES_PASSWORD: testpassword
-      POSTGRES_DB: test_db
-    ports:
-      - "5433:5432"  # Standard PostgreSQL port
-    networks:
-      - app_network
-    volumes:
-      - pg_test_data:/var/lib/postgresql/data
-      - ./scripts/docker-entrypoint-initdb-test.sh:/docker-entrypoint-initdb.d/docker-entrypoint-initdb-test.sh
- 
-  redis:
-    image: redis:7
-    container_name: redis_broker
-    networks:
-      - app_network
-    restart: always
-    ports:
-      - "6379:6379"
-
-  # FastAPI backend
   backend:
     build: .
-    image: backend
-    working_dir: /app
-    container_name: fastapi_backend
-    restart: always
-    depends_on:
-      - db
-      - redis
-    env_file:
-      - .env # Load environment variables from the .env file
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"  # Same DB URL for prod and test
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      PYTHONPATH: "/app"
+    container_name: smart_house_backend
     ports:
       - "8000:8000"
-    networks:
-      - app_network
     volumes:
-      - ./scripts:/scripts
-      - ./scripts/wait-for-it.sh:/wait-for-it.sh  # Mount the wait-for-it.sh script
-      - ./scripts/entrypoint.sh:/entrypoint.sh     
-    entrypoint: ["./scripts/entrypoint.sh"]
-  # Celery worker
-  worker:
-    build: .
-    container_name: celery_worker
-    restart: always
-    env_file:
-      - .env # Load environment variables from the .env file
-    depends_on:
-      - backend
-      - redis
-    networks:
-      - app_network
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://myuser:mypassword@db:5432/smart_house_db"
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-    command: ["celery", "-A", "app.workers.celery_worker", "worker", "--loglevel=info"]
-
-  # Celery Flower monitoring tool
-  flower:
-    image: mher/flower
-    container_name: celery_flower
-    restart: always
-    env_file:
-      - .env # Load environment variables from the .env file
-    depends_on:
-      - redis
-      - worker
-    environment:
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-    ports:
-      - "5555:5555"
-    networks:
-      - app_network
-
-
-
-# --- TEST Environment ---
-
-
-  # Optional: You can add a script to initialize the DB before running tests
-  test-backend:
-    build: .
-    container_name: test_fastapi_backend
+      - ./app:/app/app
     env_file:
       - .env
     depends_on:
-      - test_db
-      - redis
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://testuser:testpassword@test_db:5432/test_db"  
-      CELERY_BROKER_URL: "redis://redis:6379/0"
-      CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-      MQTT_PORT: "1883"
-      PYTHONPATH: "/app"
-    networks:
-      - app_network
+      mongo:
+        condition: service_healthy
+    restart: always
+
+  mongo:
+    image: mongo:7.0
+    container_name: smart_house_db
+    restart: always
+    ports:
+      - "27017:27017"
     volumes:
-      - ./scripts:/scripts  # Mount the scripts for testing, if needed
-      - ./scripts/wait-for-it.sh:/wait-for-it.sh # Mount the wait-for-it.sh script
-      - ./scripts/entrypoint-test.sh:/entrypoint-test.sh    
-    entrypoint: ["./scripts/entrypoint-test.sh"]
-# Define volumes
+      - mongo_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+      - MONGO_INITDB_DATABASE=smart_house_db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet --username admin --password admin --authenticationDatabase admin
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    command: ["--auth", "--bind_ip_all", "--wiredTigerCacheSizeGB", "1.5"]
+
 volumes:
-  pg_data:
-  pg_test_data:
+  mongo_data:

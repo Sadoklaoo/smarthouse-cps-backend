@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from app.core.database import init_db  # Import the init_db function
+from app.api.routes import api_router  # Import the API router
 import os
 
 app = FastAPI()
+
+app.include_router(api_router, prefix="/api", tags=["API"])
 
 @app.on_event("startup")
 async def startup_db_client():

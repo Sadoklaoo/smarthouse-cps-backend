@@ -13,4 +13,11 @@ class UserRead(BaseModel):
     is_active: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    password: Optional[str] = None
+
+    class Config:
+        from_attributes = True

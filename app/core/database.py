@@ -37,4 +37,4 @@ async def init_db():
         document_models=[User, Device, Sensor, Event, Automation, Action]
     )
 
-    print("✅ Connected to MongoDB!")
+    print("✅ Connected to MongoDB and indexes created!")

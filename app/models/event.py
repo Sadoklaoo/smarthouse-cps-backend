@@ -1,13 +1,22 @@
-from beanie import Document
+from beanie import Document,Indexed
 from pydantic import Field
-from typing import Optional, Dict
+from typing import Dict
 from datetime import datetime
 
 class Event(Document):
-    source: str  # Sensor or device ID
-    type: str  # e.g., "motion_detected", "temp_threshold_exceeded"
-    payload: Optional[Dict] = None
-    triggered_at: datetime = Field(default_factory=datetime.utcnow)
+    device_id: str
+    event_type: str
+    data: Dict[str, float]  # e.g., {"temperature": 23.5}
+    timestamp: datetime =  Indexed(default_factory=datetime.utcnow)
 
     class Settings:
         name = "events"
+        indexes = ["timestamp"]
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "device_id": "device-123",
+                "event_type": "temperature_change",
+                "data": {"temperature": 23.5}
+            }
+        }

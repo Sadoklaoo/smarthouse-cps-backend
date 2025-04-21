@@ -1,5 +1,6 @@
 from beanie import Document,Indexed
 from pydantic import EmailStr, Field
+from bson import ObjectId
 from typing import Optional
 from datetime import datetime
 
@@ -12,8 +13,8 @@ class User(Document):
 
     class Settings:
         name = "users"  # Collection name
-        indexes = ["email"]
     class Config:
+        arbitrary_types_allowed = True
         json_schema_extra = {
             "example": {
                 "email": "user@example.com",

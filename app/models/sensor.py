@@ -1,4 +1,5 @@
 from beanie import Document
+from bson import ObjectId
 from pydantic import Field
 from typing import Optional
 from datetime import datetime
@@ -6,7 +7,7 @@ from datetime import datetime
 class Sensor(Document):
     name: str
     type: str  # e.g., temperature, motion, humidity
-    device_id: str  # links to the device it's attached to
+    device_id: ObjectId  # Proper ObjectId reference to Device
     location: Optional[str] = None
     unit: Optional[str] = None  # e.g., °C, %, etc.
     is_active: bool = True
@@ -14,17 +15,17 @@ class Sensor(Document):
 
     class Settings:
         name = "sensors"
-        indexes = ["sensor_id", "device_id"]
+        indexes = ["device_id"]
 
     class Config:
+        arbitrary_types_allowed = True
         json_schema_extra = {
             "example": {
-                "sensor_id": "sensor-001",
                 "name": "Temp Sensor Living Room",
                 "type": "temperature",
-                "device_id": "device-123",
+                "device_id": "6630f4e2f3eab408ae50e02c",
                 "location": "Living Room",
                 "unit": "°C",
-                "is_active": True,
+                "is_active": True
             }
         }

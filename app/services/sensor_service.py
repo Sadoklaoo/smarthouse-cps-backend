@@ -56,7 +56,7 @@ async def get_all_sensors() -> List[Sensor]:
 async def get_sensors_by_device_id(device_id: str) -> List[Sensor]:
     try:
         logger.info(f"Fetching sensors for device ID: {device_id}")
-        return await Sensor.find(Sensor.device_id == PydanticObjectId(device_id)).to_list()
+        return await Sensor.find(Sensor.device_id == str(device_id)).to_list()
     except Exception as e:
         logger.error(f"Error fetching sensors by device {device_id}: {e}")
         raise HTTPException(

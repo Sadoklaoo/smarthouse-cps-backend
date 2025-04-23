@@ -7,7 +7,7 @@ from datetime import datetime
 class Sensor(Document):
     name: str
     type: str  # e.g., temperature, motion, humidity
-    device_id: ObjectId  # Proper ObjectId reference to Device
+    device_id: str   
     location: Optional[str] = None
     unit: Optional[str] = None  # e.g., °C, %, etc.
     is_active: bool = True

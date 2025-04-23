@@ -8,7 +8,8 @@ from app.services.sensor_service import (
     get_sensor_by_id,
     get_all_sensors,
     get_sensors_by_device_id,
-    delete_sensor
+    delete_sensor,
+    get_sensors_by_user
 )
 
 router = APIRouter()
@@ -111,6 +112,28 @@ async def get_sensor(sensor_id: str):
             detail="Error fetching sensor"
         )
 
+@router.get("/user/{user_id}", response_model=List[SensorRead])
+async def get_sensors_by_user_route(user_id: str):
+    try:
+        sensors = await get_sensors_by_user(user_id)
+        return [
+            SensorRead(
+                id=str(s.id),
+                name=s.name,
+                type=s.type,
+                device_id=str(s.device_id),
+                location=s.location,
+                unit=s.unit,
+                is_active=s.is_active,
+                registered_at=s.registered_at
+            ) for s in sensors
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching sensors for user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error fetching sensors for user"
+        )
 
 @router.delete("/{sensor_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete(sensor_id: str):

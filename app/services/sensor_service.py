@@ -5,6 +5,9 @@ from beanie import PydanticObjectId
 
 from app.models.sensor import Sensor
 from app.schemas.sensor import SensorCreate, SensorUpdate
+from app.services.device_service import get_device_by_id, get_devices_by_user
+from app.services.user_service import get_user_by_id
+from beanie.operators import In
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,6 +17,15 @@ logger.setLevel(logging.INFO)
 async def create_sensor(sensor_data: SensorCreate) -> Sensor:
     try:
         logger.info(f"Creating sensor for device: {sensor_data.device_id}")
+        
+         # ✅ Check if device exists
+        device = await get_device_by_id(sensor_data.device_id)
+        if not device:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Device not found. Cannot create sensor."
+            )
+        
         sensor = Sensor(**sensor_data.dict())
         await sensor.insert()
         logger.info(f"Sensor created with ID: {sensor.id}")
@@ -64,6 +76,45 @@ async def get_sensors_by_device_id(device_id: str) -> List[Sensor]:
             detail=f"Error fetching sensors: {str(e)}"
         )
 
+# Get sensors for a specific User
+async def get_sensors_by_user(user_id: str) -> List[Sensor]:
+    try:
+        logger.info(f"Fetching sensors for User ID: {user_id}")
+        # ✅ Check if user exists
+        user = await get_user_by_id(user_id)
+        if not user:
+            logger.warning(f"User with ID {user_id} not found.")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+
+        # ✅ Step 2: Get devices for the user
+        devices = await get_devices_by_user(user_id)
+        if not devices:
+            logger.info(f"No devices found for user {user_id}")
+            return []
+        
+         # ✅ Step 3: Get sensors for those devices
+        device_ids = [str(device.id) for device in devices if device.id is not None]
+        if not device_ids:
+            logger.warning(f"No valid device IDs for user {user_id}. Skipping sensor query.")
+            return []
+        
+        logger.info(f"Device IDs for user {user_id}: {device_ids}")
+
+        # ✅ Step 4: Fetch sensors for the devices
+        sensors = await Sensor.find_many(In(Sensor.device_id, device_ids)).to_list()
+        logger.info(f"Found {len(sensors)} sensors for user {user_id}")
+        
+        return sensors
+    except Exception as e:
+        logger.error(f"Error fetching sensors by user {user_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching sensors for user: {str(e)}"
+        )
+    
 
 # Delete a sensor
 async def delete_sensor(sensor_id: str) -> bool:

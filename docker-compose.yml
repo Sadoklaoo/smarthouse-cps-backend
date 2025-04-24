@@ -14,7 +14,12 @@ services:
       mongo:
         condition: service_healthy
     restart: always
-
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
   mongo:
     image: mongo:7.0
     container_name: smart_house_db

@@ -1,5 +1,7 @@
 # routes/monitor_routes.py
+import datetime
 from fastapi import APIRouter
+from app.queues.event_producer import enqueue_event
 from app.schemas.event import EventCreate, EventRead
 from app.services.event_service import log_event
 import logging
@@ -18,3 +20,13 @@ async def create_event(event: EventCreate):
         data=saved_event.data,
         timestamp=saved_event.timestamp
     )
+
+@router.post("/trigger")
+async def trigger_event():
+    event = {
+        "type": "motion_detected",
+        "sensor_id": "abc123",
+        "timestamp": datetime.datetime.utcnow().isoformat()
+    }
+    await enqueue_event(event)
+    return {"message": "Event queued", "event": event}

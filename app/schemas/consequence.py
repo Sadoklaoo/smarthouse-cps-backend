@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -9,6 +10,7 @@ class ConsequenceRead(BaseModel):
     device_id: str
     status: str
     timestamp: datetime
+    executed_at: Optional[datetime] = None 
 
     class Config:
         from_attributes = True

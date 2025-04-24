@@ -12,7 +12,7 @@ motor>=3.1.1
 beanie>=1.23.2rc0
 
 # Redis & Task Queue
-redis>=4.4.4
+redis>=5.0.0
 celery>=5.2.7
 flower==2.0.1
 

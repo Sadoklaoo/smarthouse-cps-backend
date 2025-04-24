@@ -1,3 +1,4 @@
+import datetime
 from app.models.consequence import Consequence
 from fastapi import HTTPException
 from beanie import PydanticObjectId
@@ -26,6 +27,7 @@ async def mark_consequence_as_executed(consequence_id: str) -> Consequence:
     try:
         consequence = await get_consequence_by_id(consequence_id)
         consequence.status = "executed"
+        consequence.executed_at = datetime.datetime.utcnow()
         await consequence.save()
         return consequence
     except Exception as e:

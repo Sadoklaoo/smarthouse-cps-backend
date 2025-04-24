@@ -1,4 +1,5 @@
 # models/consequence.py
+from typing import Optional
 from beanie import Document
 from pydantic import Field
 from datetime import datetime
@@ -10,7 +11,7 @@ class Consequence(Document):
     device_id: str
     status: str = "pending"  # or "executed"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-
+    executed_at: Optional[datetime] = None
     class Settings:
         name = "consequences"
 
@@ -23,6 +24,7 @@ class Consequence(Document):
                 "rule_id": "rule456",
                 "action": "turn_on",
                 "device_id": "device-123",
-                "status": "pending"
+                "status": "pending",
+                "executed_at": "2025-04-24T17:00:00Z"
             }
         }

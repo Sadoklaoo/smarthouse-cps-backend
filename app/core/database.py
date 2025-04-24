@@ -2,12 +2,15 @@
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
+from app.models.consequence import Consequence
+from app.models.rule import Rule
 from app.models.user import User
 from app.models.device import Device
 from app.models.sensor import Sensor
 from app.models.event import Event
 from app.models.automation import Automation
 from app.models.action import Action
+
 import os
 from dotenv import load_dotenv
 from typing import Optional
@@ -34,7 +37,10 @@ async def init_db():
     # Initialize Beanie models
     await init_beanie(
         database=db,
-        document_models=[User, Device, Sensor, Event, Automation, Action]
+        document_models=[User, Device, Sensor, Event, Automation, Action,Consequence,Rule],
     )
+
+    await Rule.find_all().limit(1).to_list()
+    await Consequence.find_all().limit(1).to_list()
 
     print("✅ Connected to MongoDB and indexes created!")

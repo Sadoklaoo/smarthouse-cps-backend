@@ -7,6 +7,7 @@ import asyncio
 
 from app.models.consequence import Consequence
 from app.services.consequence_service import mark_consequence_as_executed
+from app.services.rule_service import get_matching_rules
 
 logger = logging.getLogger(__name__)
 
@@ -25,29 +26,23 @@ async def consume_events():
         await asyncio.sleep(0.1)  # avoid tight loop
 
 async def handle_event(event: dict):
-    # 🔧 Logic to trigger device actions or log to ConsequencePool
-    print(f"🚀 Triggering consequence for event: {event}")
-    # Example fake rule + action — you'll plug in real ones later
-    rule_id = "rule-manual"
-    action = "turn_on"
-    device_id = event.get("sensor_id")
+    matching_rules = await get_matching_rules(event)
+    
+    if not matching_rules:
+        print("🚫 No matching rules found for this event.")
+        return
 
-    consequence = Consequence(
-        event_id=event.get("event_id", "event-manual"),
-        rule_id=rule_id,
-        action=action,
-        device_id=device_id,
-        status="pending",
-        timestamp=datetime.datetime.utcnow()
-    )
+    for rule in matching_rules:
+        consequence = Consequence(
+            event_id=event.get("event_id", "event-auto"),
+            rule_id=str(rule.id),
+            action=rule.action,
+            device_id=rule.target_device_id,
+            status="pending"
+        )
+        await consequence.insert()
+        print(f"📝 Logged consequence: {consequence}")
 
-    await consequence.insert()
-    print(f"📝 Logged consequence: {consequence}")
-
-
-    # 2. Simulate action (e.g., turning on a light)
-    print(f"💡 Simulating action: {action} on {device_id}")
-
-    # 3. Mark consequence as executed
-    updated = await mark_consequence_as_executed(str(consequence.id))
-    print(f"✅ Marked consequence as executed: {updated.id}")
+        # Simulate execution
+        print(f"⚙️  Executing action: {rule.action} on device {rule.target_device_id}")
+        await mark_consequence_as_executed(str(consequence.id))

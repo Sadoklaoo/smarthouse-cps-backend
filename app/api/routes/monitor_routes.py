@@ -24,8 +24,9 @@ async def create_event(event: EventCreate):
 @router.post("/trigger")
 async def trigger_event():
     event = {
-        "type": "motion_detected",
+        "type": "temperature_change",
         "sensor_id": "abc123",
+        "temperature": 26,
         "timestamp": datetime.datetime.utcnow().isoformat()
     }
     await enqueue_event(event)

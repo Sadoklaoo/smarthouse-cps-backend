@@ -2,8 +2,36 @@ from app.models.rule import Rule
 from app.schemas.rule import RuleCreate
 from fastapi import HTTPException
 import logging
-
+from typing import List
+import operator
 logger = logging.getLogger(__name__)
+
+
+OPERATORS = {
+    ">": operator.gt,
+    "<": operator.lt,
+    "==": operator.eq,
+    ">=": operator.ge,
+    "<=": operator.le
+}
+async def get_matching_rules(event: dict) -> List[Rule]:
+    all_rules = await Rule.find_all().to_list()
+    matched_rules = []
+
+    for rule in all_rules:
+        if rule.trigger_type != event.get("type"):
+            continue
+        
+        # Example: rule.condition = {"temperature": 28.0}
+        for key, value in rule.condition.items():
+            if key not in event:
+                continue
+            event_value = event[key]
+            op = OPERATORS.get(rule.operator)
+            if op and op(event_value, value):
+                matched_rules.append(rule)
+
+    return matched_rules
 
 async def create_rule(rule_in: RuleCreate) -> Rule:
     try:

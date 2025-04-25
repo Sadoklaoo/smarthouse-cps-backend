@@ -1,42 +1,49 @@
+from app.models.rule import Rule
 from app.models.event import Event
-from app.services.consequence_pool import consequence_pool
+from app.models.consequence import Consequence
+from fastapi import HTTPException
+import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # 👈 make sure logs are visible
 
-class ReactorService:
-    def __init__(self, event_pool):
-        # Event to action mapping
-        self.event_actions = {
-            "motion_detected": ("turn_on_lights", "lights_on"),
-            "temperature_high": ("turn_on_ac", "ac_on"),
-            "door_opened": ("send_alert", "alert_sent"),
-        }
-        # Store the event pool instance
-        self.event_pool = event_pool
+def compare(value: float, operator: str, target: float) -> bool:
+    if operator == ">":
+        return value > target
+    if operator == "<":
+        return value < target
+    if operator == "==":
+        return value == target
+    return False
 
-    def process_event(self, event: Event):
-        """Process the event and trigger the corresponding action."""
-        action, result = self.react_to_event(event)
-        # Log the action to the consequence pool
-        consequence_pool.add_consequence(action, result)
-        # Print the action and result
-        print(f"Action triggered: {action} | Result: {result}")
+async def process_event(event: Event):
+    try:
+        logger.info(f"🔁 Reactor triggered for event type: {event.event_type}")
+        
+        # ✅ Step 1: Get matching rules
+        rules = await Rule.find(Rule.trigger_type == event.event_type).to_list()
+        logger.info(f"Found {len(rules)} rule(s) matching event type '{event.event_type}'")
 
-    def react_to_event(self, event: Event):
-        """React to the event by triggering an action."""
-        # Get the action and result based on the event type
-        action, result = self.event_actions.get(
-            event.event_type, ("no_action", "no_action")
-        )
+        for rule in rules:
+            logger.info(f"Evaluating rule: {rule.name} for device {rule.target_device_id}")
+            for key, threshold in rule.condition.items():
+                event_value = event.data.get(key)
+                logger.info(f"Condition: event[{key}] = {event_value}, rule {rule.operator} {threshold}")
 
-        # Store the consequence in consequence_pool
-        consequence_pool.add_consequence(action, result)
+                if event_value is not None and compare(event_value, rule.operator, threshold):
+                    logger.info(f"✅ Rule '{rule.name}' triggered by event {event.id} (value: {event_value})")
 
-        # Optional: Log the triggered action and result for debugging
-        print(f"Triggered action: {action} for event: {event.event_type}")
+                    consequence = Consequence(
+                        event_id=str(event.id),
+                        rule_id=str(rule.id),
+                        action=rule.action,
+                        device_id=rule.target_device_id,
+                        status="pending"
+                    )
 
-        return action, result
+                    await consequence.insert()
+                    logger.info(f"📦 Consequence created for device {rule.target_device_id}")
 
-    def handle_event(self, event: Event):
-        """Handle event processing."""
-        print(f"Handling event: {event.event_type} from Device {event.device_id}")
-        self.process_event(event)
+    except Exception as e:
+        logger.error(f"🚨 Error in reactor: {e}")
+        raise HTTPException(status_code=500, detail="Error processing event in Reactor")

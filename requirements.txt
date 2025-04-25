@@ -1,43 +1,37 @@
-# To ensure app dependencies are ported from your virtual environment/host machine into your container, run 'pip freeze > requirements.txt' in the terminal to overwrite this file
+# Core Backend
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+pydantic-extra-types==2.4.0
+pydantic-settings==2.2.1
+python-dotenv>=0.19.0
+loguru>=0.6.0
 
-# Requirements for Smart House Backend
+# Async MongoDB (use Motor + Beanie only)
+motor>=3.1.1
+beanie>=1.23.2rc0
 
-# FastAPI (Backend Framework)
-fastapi[all]==0.110.0
-uvicorn==0.29.0
+# Redis & Task Queue
+redis>=5.0.0
+celery>=5.2.7
+flower==2.0.1
 
-# Database & ORM
-sqlalchemy==1.4.46
-asyncpg==0.29.0
-psycopg2-binary==2.9.10
-databases==0.8.0
-alembic==1.15.1
+# MQTT (Pick only one: paho-mqtt OR gmqtt)
+gmqtt>=0.6.12
+# paho-mqtt==1.6.1  # Optional, if you don't want async
 
+# Authentication / Security
+passlib[bcrypt]>=1.7.4
+bcrypt==4.1.2
+pyjwt==2.8.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.5
+email-validator==2.1.0.post1
 
-# Redis & Celery (Task Queue)
-redis==5.0.1
-celery[redis]==5.3.6
-
-# MQTT (Real-time Communication)
-paho-mqtt==1.6.1
-
-# Async Support & Utilities
-asyncpg==0.29.0
+# Utilities
 tenacity==8.2.3
 
-# Environment Variables
-python-dotenv==1.0.1
-
-# Logging & Monitoring
-loguru==0.7.2
-
-# Testing & Development
-pytest==8.1.1
+# Testing
+pytest==7.4.3
 pytest-asyncio==0.23.6
-httpx==0.27.0
-
-# Security & Authentication
-passlib[bcrypt]==1.7.4
-pyjwt==2.8.0
-bcrypt==4.1.2
-
+httpx==0.25.1

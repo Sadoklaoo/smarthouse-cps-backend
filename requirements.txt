@@ -1,5 +1,5 @@
 # Core Backend
-fastapi>=0.110.0
+fastapi[all]>=0.110.0
 uvicorn[standard]>=0.29.0
 pydantic>=2.0.0
 pydantic-extra-types==2.4.0
@@ -7,31 +7,33 @@ pydantic-settings==2.2.1
 python-dotenv>=0.19.0
 loguru>=0.6.0
 
-# Async MongoDB (use Motor + Beanie only)
+# Async MongoDB (Motor + Beanie)
 motor>=3.1.1
 beanie>=1.23.2rc0
 
 # Redis & Task Queue
 redis>=5.0.0
-celery>=5.2.7
+celery[redis]>=5.3.6
 flower==2.0.1
 
-# MQTT (Pick only one: paho-mqtt OR gmqtt)
-gmqtt>=0.6.12
-# paho-mqtt==1.6.1  # Optional, if you don't want async
+# MQTT (Real-time Communication)
+paho-mqtt==1.6.1
 
 # Authentication / Security
 passlib[bcrypt]>=1.7.4
-bcrypt==4.1.2
-pyjwt==2.8.0
+bcrypt>=4.1.2
+pyjwt>=2.8.0
 python-jose[cryptography]>=3.3.0
 python-multipart>=0.0.5
-email-validator==2.1.0.post1
+email-validator>=2.1.0.post1
 
 # Utilities
 tenacity==8.2.3
 
+# HTTP Client
+httpx==0.27.0
+
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.23.6
-httpx==0.25.1
+

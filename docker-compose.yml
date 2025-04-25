@@ -1,9 +1,15 @@
 version: '3.9'
 
+networks:
+  app_network:
+    driver: bridge
+
 services:
   backend:
     build: .
     container_name: smart_house_backend
+    networks:
+      - app_network
     ports:
       - "8000:8000"
     volumes:
@@ -14,16 +20,32 @@ services:
       mongo:
         condition: service_healthy
     restart: always
+
   redis:
     image: redis:7-alpine
     container_name: redis
+    networks:
+      - app_network
     ports:
       - "6379:6379"
     restart: unless-stopped
+
+  mqtt:
+    image: eclipse-mosquitto
+    container_name: mqtt_broker
+    networks:
+      - app_network
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: always
+
   mongo:
     image: mongo:7.0
     container_name: smart_house_db
-    restart: always
+    networks:
+      - app_network
     ports:
       - "27017:27017"
     volumes:
@@ -34,12 +56,17 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=admin
       - MONGO_INITDB_DATABASE=smart_house_db
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet --username admin --password admin --authenticationDatabase admin
+      test: echo 'db.runCommand("ping").ok' \| mongosh --quiet --username admin --password admin --authenticationDatabase admin
       interval: 10s
       timeout: 10s
       retries: 5
       start_period: 40s
-    command: ["--auth", "--bind_ip_all", "--wiredTigerCacheSizeGB", "1.5"]
+    command:
+      - "--auth"
+      - "--bind_ip_all"
+      - "--wiredTigerCacheSizeGB"
+      - "1.5"
+    restart: always
 
 volumes:
   mongo_data:

@@ -1,24 +1,25 @@
-from sqlalchemy import Column, String, UUID, TIMESTAMP, ForeignKey, Enum, Boolean
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.models.base import Base
-import uuid
-import enum
+from beanie import Document,Indexed
+from pydantic import EmailStr, Field
+from bson import ObjectId
+from typing import Optional
+from datetime import datetime
 
+class User(Document):
+    email: EmailStr =  Indexed(unique=True)
+    hashed_password: str
+    full_name: Optional[str] = None
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-# User Model
-class UserRole(enum.Enum):
-    ADMIN = "admin"
-    RESIDENT = "resident"
-    GUEST = "guest"
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = Column(String(255), unique=True, nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
-    password = Column(String, nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.RESIDENT, nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.now())
+    class Settings:
+        name = "users"  # Collection name
+    class Config:
+        arbitrary_types_allowed = True
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "hashed_password": "hashed_password_here",
+                "full_name": "John Doe",
+                "is_active": True
+            }
+        }

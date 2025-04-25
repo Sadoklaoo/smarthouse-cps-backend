@@ -1,23 +1,24 @@
-from sqlalchemy import Column, String, UUID, TIMESTAMP, ForeignKey, Enum, Boolean
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.models.base import Base
-import uuid
+from beanie import Document,Indexed
+from pydantic import Field
+from typing import Dict
+from datetime import datetime
 
-from app.models.device import Device
-
-
-class Event(Base):
-    __tablename__ = "events"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id"), nullable=False)
-    event_type = Column(String(255), nullable=False)
-    timestamp = Column(TIMESTAMP, server_default=func.now())
-
-    device = relationship("Device", back_populates="events")
+class Event(Document):
+    device_id: str
+    event_type: str
+    data: Dict[str, float]  # e.g., {"temperature": 23.5}
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
-Device.events = relationship(
-    "Event", back_populates="device", cascade="all, delete-orphan"
-)
+    class Settings:
+        name = "events"
+        indexes = ["timestamp"]
+    class Config:
+        arbitrary_types_allowed = True
+        json_schema_extra = {
+            "example": {
+                "device_id": "device-123",
+                "event_type": "temperature_change",
+                "data": {"temperature": 23.5}
+            }
+        }

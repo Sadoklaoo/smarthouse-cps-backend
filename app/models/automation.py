@@ -1,25 +1,26 @@
-from sqlalchemy import Column, String, UUID, TIMESTAMP, ForeignKey, Enum, Boolean
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
-from app.models.base import Base
-import uuid
-import enum
+from beanie import Document,Indexed
+from pydantic import Field
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 
-from app.models.device import Device
+class Automation(Document):
+    name: str = Indexed(unique=True)
+    description: Optional[str]
+    trigger: Dict[str, Any]  # e.g., {"sensor_type": "temperature", "value_gt": 25}
+    conditions: Optional[List[Dict[str, Any]]]
+    is_enabled: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-
-class Automation(Base):
-    __tablename__ = "automation_rules"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    condition = Column(String(255), nullable=False)
-    action = Column(String(255), nullable=False)
-    device_id = Column(UUID(as_uuid=True), ForeignKey("devices.id"), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.now())
-
-    device = relationship("Device", back_populates="automation")
-
-
-Device.automation = relationship(
-    "Automation", back_populates="device", cascade="all, delete-orphan"
-)
+    class Settings:
+        name = "automations"
+        indexes = ["name"]
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Cool Down Room",
+                "description": "Turn on fan if temperature > 25",
+                "trigger": {"sensor_type": "temperature", "value_gt": 25},
+                "conditions": [{"room": "Living Room"}],
+                "is_enabled": True
+            }
+        }

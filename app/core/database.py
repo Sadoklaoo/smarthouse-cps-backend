@@ -1,33 +1,46 @@
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from app.core.config import settings
-from app.models.base import Base
+# db.py (Initialization for database)
 
-# Create async engine
-engine = create_async_engine(settings.DATABASE_URL, future=True, echo=True)
+from motor.motor_asyncio import AsyncIOMotorClient
+from beanie import init_beanie
+from app.models.consequence import Consequence
+from app.models.rule import Rule
+from app.models.user import User
+from app.models.device import Device
+from app.models.sensor import Sensor
+from app.models.event import Event
+from app.models.automation import Automation
+from app.models.action import Action
 
-# Create session factory
-async_session = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+import os
+from dotenv import load_dotenv
+from typing import Optional
 
+load_dotenv()
 
+# Get MongoDB credentials from environment variables
+MONGO_USERNAME = os.getenv("MONGO_USERNAME", "admin")
+MONGO_PASSWORD = os.getenv("MONGO_PASSWORD", "admin")
+MONGO_HOST = os.getenv("MONGO_HOST", "mongo")
+MONGO_PORT = os.getenv("MONGO_PORT", "27017")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "smart_house_db")
 
-# Dependency for database session
-async def get_db():
-    async with async_session() as session:
-        yield session
+# Construct MongoDB URI with authentication
+MONGODB_URI = f"mongodb://{MONGO_USERNAME}:{MONGO_PASSWORD}@{MONGO_HOST}:{MONGO_PORT}/{DATABASE_NAME}?authSource=admin"
 
+client: Optional[AsyncIOMotorClient] = None  # type: ignore
 
-# Test function to check database connection
-async def test_database_connection():
-    async with async_session() as session:
-        async with session.begin():
-            result = await session.execute(select(1))
-            return result.scalar()  # This should return 1 if the query is successful
+async def init_db():
+    global client
+    client = AsyncIOMotorClient(MONGODB_URI)  # MongoDB client initialization
+    db = client[DATABASE_NAME]
 
+    # Initialize Beanie models
+    await init_beanie(
+        database=db,
+        document_models=[User, Device, Sensor, Event, Automation, Action,Consequence,Rule],
+    )
 
-# Create all tables in the database
-async def create_tables():
-    async with engine.begin() as conn:
-        # Create all tables based on Base
-        await conn.run_sync(Base.metadata.create_all)
+    await Rule.find_all().limit(1).to_list()
+    await Consequence.find_all().limit(1).to_list()
+
+    print("✅ Connected to MongoDB and indexes created!")

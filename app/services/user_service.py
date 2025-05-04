@@ -39,8 +39,7 @@ async def create_user(user_in: UserCreate) -> User:
 async def get_user_by_email(email: str) -> Optional[User]:
     try:
         logger.info(f"Fetching user by email: {email}")
-        user = await User.find_one(User.email == email)
-        return user
+        return await User.find_one(User.email == email)
     except Exception as e:
         logger.error(f"Error fetching user by email {email}: {e}")
         raise HTTPException(
@@ -53,8 +52,7 @@ async def get_user_by_email(email: str) -> Optional[User]:
 async def get_user_by_id(user_id: str) -> Optional[User]:
     try:
         logger.info(f"Fetching user by ID: {user_id}")
-        user = await User.get(PydanticObjectId(user_id))
-        return user
+        return await User.get(PydanticObjectId(user_id))
     except Exception as e:
         logger.error(f"Error fetching user by ID {user_id}: {e}")
         raise HTTPException(
@@ -94,10 +92,11 @@ async def update_user(user_id: str, user_in: UserUpdate) -> User:
                 detail="User not found"
             )
 
-        if user_in.full_name is not None:
-            user.full_name = user_in.full_name
-        if user_in.password is not None:
-            user.hashed_password = hash_password(user_in.password)
+        update_data = user_in.dict(exclude_unset=True)
+        if "password" in update_data:
+            user.hashed_password = hash_password(update_data.pop("password"))
+        if "full_name" in update_data:
+            user.full_name = update_data["full_name"]
 
         await user.save()
         logger.info(f"User {user_id} updated successfully")

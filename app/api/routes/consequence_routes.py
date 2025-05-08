@@ -28,7 +28,8 @@ async def list_consequences_route():
                 action=c.action,
                 device_id=c.device_id,
                 status=c.status,
-                timestamp=c.timestamp
+                timestamp=c.timestamp,
+                executed_at=c.executed_at
             ) for c in consequences
         ]
     except Exception as e:
@@ -50,7 +51,8 @@ async def get_consequence_route(consequence_id: str):
             action=consequence.action,
             device_id=consequence.device_id,
             status=consequence.status,
-            timestamp=consequence.timestamp
+            timestamp=consequence.timestamp,
+            executed_at=consequence.executed_at
         )
     except Exception as e:
         logger.error(f"Error getting consequence {consequence_id}: {e}")
@@ -71,6 +73,7 @@ async def execute_consequence_route(consequence_id: str):
             action=updated.action,
             device_id=updated.device_id,
             status=updated.status,
+            executed_at=updated.executed_at,
             timestamp=updated.timestamp
         )
     except Exception as e:

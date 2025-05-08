@@ -1,12 +1,14 @@
 import logging
-from typing import List
+from typing import List, Literal
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 
 from app.schemas.device import DeviceCreate, DeviceRead, DeviceUpdate
 from app.services.device_service import (
     create_device,
     get_device_by_id,
     get_devices_by_user,
+    set_device_state,
     update_device,
     delete_device,
 )
@@ -140,3 +142,21 @@ async def delete_device_route(device_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error deleting device: {str(e)}"
         )
+
+
+class StateUpdate(BaseModel):
+    state: Literal["on", "off"]
+
+@router.post("/{device_id}/state", response_model=DeviceRead, status_code=status.HTTP_200_OK)
+async def update_device_state_route(device_id: str, body: StateUpdate):
+    updated = await set_device_state(device_id, body.state)
+    return DeviceRead(
+        id=str(updated.id),
+        name=updated.name,
+        type=updated.type,
+        location=updated.location,
+        user_id=updated.user_id,
+        is_active=updated.is_active,
+        state=updated.state,
+        registered_at=updated.registered_at
+    )

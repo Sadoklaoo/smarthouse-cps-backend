@@ -4,8 +4,19 @@ from app.api.routes import api_router  # Import the API router
 import os
 import asyncio
 from app.queues.reactor_worker import consume_events
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# CORS configuration: Allow requests from localhost:3000 (React app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
+
 
 app.include_router(api_router, prefix="/api", tags=["API"])
 

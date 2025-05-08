@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 from bson import ObjectId
 from app.models.device import Device
@@ -105,3 +105,26 @@ async def delete_device(device_id: str) -> bool:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error deleting device: {str(e)}"
         )
+
+# Set device state (on/off)
+async def set_device_state(device_id: str, state: Literal["on", "off"]) -> Device:
+    # Validate state
+    if state not in ("on", "off"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid state '{state}', must be 'on' or 'off'"
+        )
+
+    # Fetch device
+    device = await get_device_by_id(device_id)
+    if not device:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+
+    # Update and save
+    device.state = state
+    device.registered_at = device.registered_at   # preserve existing timestamp
+    await device.save()
+    return device

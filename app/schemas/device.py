@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 
 class DeviceCreate(BaseModel):
@@ -18,6 +18,7 @@ class DeviceRead(BaseModel):
     user_id: str
     is_active: bool
     registered_at: datetime
+    state: Literal["on", "off"]    
 
     class Config:
         from_attributes = True
@@ -27,6 +28,6 @@ class DeviceUpdate(BaseModel):
     type: Optional[str] = None
     location: Optional[str] = None
     is_active: Optional[bool] = None
-
+    state: Optional[Literal["on", "off"]] = None
     class Config:
         from_attributes = True

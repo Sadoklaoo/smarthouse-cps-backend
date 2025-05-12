@@ -58,15 +58,12 @@ async def get_devices_by_user(user_id: str) -> List[Device]:
         )
 
 
-# Get all devices 
-async def get_devices() -> List[Device]:
+async def get_all_devices() -> List[Device]:
     try:
-        logger.info(f"Fetching all devices ")
-        devices = await Device.find().to_list()
-        logger.info(f"Found {len(devices)} devices ")
-        return devices
+        # Fetch every document in the devices collection
+        return await Device.find_all().to_list()
     except Exception as e:
-        logger.error(f"Error fetching devices {e}")
+        logger.error(f"Error fetching all devices: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching devices: {str(e)}"

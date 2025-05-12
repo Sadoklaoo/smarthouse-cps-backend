@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.schemas.device import DeviceCreate, DeviceRead, DeviceUpdate
 from app.services.device_service import (
     create_device,
+    get_all_devices,
     get_device_by_id,
     get_devices_by_user,
     set_device_state,
@@ -96,34 +97,18 @@ async def get_devices_for_user(user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal error fetching user's devices: {str(e)}"
         )
-@router.get("/", response_model=List[DeviceRead])
-async def get_devices():
-    try:
-        logger.info(f"Fetching all devices ")
-        devices = await get_devices()
-        if not devices:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No devices found "
-            )
-        return [
-            DeviceRead(
-                id=str(device.id),
-                name=device.name,
-                type=device.type,
-                location=device.location,
-                user_id=str(device.user_id),
-                is_active=device.is_active,
-                registered_at=device.registered_at
-            )
-            for device in devices
-        ]
-    except Exception as e:
-        logger.error(f"Error fetching devices  {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error fetching devices: {str(e)}"
-        )
+@router.get(
+    "/", 
+    response_model=List[DeviceRead], 
+    status_code=status.HTTP_200_OK
+)
+async def list_all_devices_route():
+    """
+    Retrieve all devices in the system.
+    """
+    devices = await get_all_devices()
+    # Convert each Beanie Document into the Pydantic read model
+    return [DeviceRead.model_validate(device) for device in devices]
 
 @router.put("/{device_id}", response_model=DeviceRead)
 async def update_device_route(device_id: str, device_in: DeviceUpdate):

@@ -11,7 +11,7 @@ class Device(Document):
     user_id: str  # still passing around as string
     registered_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
-    state: Literal["on", "off"] = "off"    # 👈 put this inside the class
+    state: Literal["on", "off"] = Field(default="off")  # 👈 put this inside the class
 
     class Settings:
         name = "devices"

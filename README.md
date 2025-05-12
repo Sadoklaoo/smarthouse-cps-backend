@@ -59,7 +59,7 @@ smarthouse-cps-backend/
 │   ├── services/         # Business logic & database operations
 │   ├── queues/           # Event producer & reactor worker
 │   └── main.py           # FastAPI application entrypoint
-├── docker-compose.yml    # Service definitions (backend, redis, mqtt, mongo)
+├── docker-compose.yml    # Service definitions (backend, mqtt, mongo)
 ├── Dockerfile            # Backend image build
 ├── requirements.txt      # Python dependencies
 └── tests/                # Test suite

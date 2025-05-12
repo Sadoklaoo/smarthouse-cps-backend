@@ -96,7 +96,34 @@ async def get_devices_for_user(user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal error fetching user's devices: {str(e)}"
         )
-
+@router.get("/", response_model=List[DeviceRead])
+async def get_devices():
+    try:
+        logger.info(f"Fetching all devices ")
+        devices = await get_devices()
+        if not devices:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No devices found "
+            )
+        return [
+            DeviceRead(
+                id=str(device.id),
+                name=device.name,
+                type=device.type,
+                location=device.location,
+                user_id=str(device.user_id),
+                is_active=device.is_active,
+                registered_at=device.registered_at
+            )
+            for device in devices
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching devices  {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal error fetching devices: {str(e)}"
+        )
 
 @router.put("/{device_id}", response_model=DeviceRead)
 async def update_device_route(device_id: str, device_in: DeviceUpdate):

@@ -58,6 +58,21 @@ async def get_devices_by_user(user_id: str) -> List[Device]:
         )
 
 
+# Get all devices 
+async def get_devices() -> List[Device]:
+    try:
+        logger.info(f"Fetching all devices ")
+        devices = await Device.find().to_list()
+        logger.info(f"Found {len(devices)} devices ")
+        return devices
+    except Exception as e:
+        logger.error(f"Error fetching devices {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error fetching devices: {str(e)}"
+        )
+
+
 # Update a device by ID
 async def update_device(device_id: str, device_in: DeviceUpdate) -> Optional[Device]:
     try:

@@ -2,6 +2,7 @@ from typing import Optional
 from beanie import PydanticObjectId
 from passlib.context import CryptContext
 from fastapi import HTTPException, status
+from datetime import datetime, timedelta
 
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
@@ -13,6 +14,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+async def authenticate_user(email: str, password: str) -> Optional[User]:
+    """Authenticate a user by email and password"""
+    try:
+        user = await get_user_by_email(email)
+        if not user:
+            logger.warning(f"Authentication failed: No user with email {email}")
+            return None
+        if not verify_password(password, user.hashed_password):
+            logger.warning(f"Authentication failed: Invalid password for {email}")
+            return None
+        
+        # Update last login time
+        user.last_login = datetime.utcnow()
+        await user.save()
+        
+        return user
+    except Exception as e:
+        logger.error(f"Error authenticating user {email}: {e}")
+        return None
+
 
 # Create a new user
 async def create_user(user_in: UserCreate) -> User:
@@ -22,7 +46,8 @@ async def create_user(user_in: UserCreate) -> User:
         user = User(
             email=user_in.email,
             hashed_password=hashed_pw,
-            full_name=user_in.full_name
+            full_name=user_in.full_name,
+            roles=user_in.roles if user_in.roles else None
         )
         await user.insert()
         logger.info(f"User created successfully: {user_in.email}")
@@ -97,6 +122,8 @@ async def update_user(user_id: str, user_in: UserUpdate) -> User:
             user.hashed_password = hash_password(update_data.pop("password"))
         if "full_name" in update_data:
             user.full_name = update_data["full_name"]
+        if "roles" in update_data and update_data["roles"]:
+            user.roles = update_data["roles"]
 
         await user.save()
         logger.info(f"User {user_id} updated successfully")
